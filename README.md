@@ -54,10 +54,10 @@ Example 1: render _/static/myimage.png_ image at a maximum size of 200 x 150 px:
 {% simplethumb "myimage.png" "200x150" %}
 ```
 
-Example 2: render model's _news.image_ as a thumbnail:
+Example 2: render model's _news.image_ as a thumbnail (assuming _thumbnail_ is a defined preset):
 
 ```html
-{% simplethumb news.image|resize:"thumbnail" %}
+{% simplethumb "news.image" "thumbnail" %}
 ```
 
 Example 3: render _/static/myimage.png_ image at a maximum cropped size of 150 x 150 px:
@@ -134,7 +134,7 @@ You may override them or create new ones through settings.py
 Custom presets examples :
 
 ```python
-IMAGEFIT_PRESETS = {
+SIMPLETHUMB_PRESETS = {
     'thumbnail': '64x64,C',
     'my_preset1': '300x200 jpeg',
     'my_preset2': '100x',
@@ -196,11 +196,11 @@ The spec string used with the tag can contain the following tokens. While some t
 some will conflict and could produce unexpected results. Common sense is encouraged (i.e. don't try
 to convert an image to both JPEG and PNG at the same time).
 
-* Resize Image - '_W_x_H_' - Proportionally scale an image to fit within a box _W_ wide and _H_ high. e.g. `300x400`
-* Fit to Width - '_W_x' - Proportionally scale an image to have width _W_. e.g. `300x`
-* Fit to Height - 'x_H_' - Proportionally scale an image to have height _H_. e.g. `x400`
-* Scale Image - '_P_%' - Proportionally scale an image by _P_ percent. e.g. `50%`
-* Crop Image - '_W_x_H_,C - Scale an image to *fill* a box _W_ wide and _H_ high, cropping off any excess. e.g. '100x100,C'
+* Resize Image - 'WxH' - Proportionally scale an image to fit within a box _W_ wide and _H_ high. e.g. `300x400`
+* Fit to Width - 'Wx' - Proportionally scale an image to have width _W_. e.g. `300x`
+* Fit to Height - 'xH' - Proportionally scale an image to have height _H_. e.g. `x400`
+* Scale Image - 'P%' - Proportionally scale an image by _P_ percent. e.g. `50%`
+* Crop Image - 'WxH,C - Scale an image to *fill* a box _W_ wide and _H_ high, cropping off any excess. e.g. '100x100,C'
 * Convert image to JPEG - 'jpeg' - Convert an image to JPEG (optionally include a 'quality' setting between 1 and 100). e.g. 'jpeg80'
 * Convert image to PNG - 'png' - Convert an image to PNG (optionally include the letter _O_ to optimize). e.g. 'pngO'
 
