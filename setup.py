@@ -2,19 +2,18 @@
 
 from setuptools import setup, find_packages
 
-
 setup(
-    name='django-imagefit',
-    version='0.5',
-    description='Render an optimized version of your original image on display. Ability to resize and crop.',
+    name='django-simplethumb',
+    version='0.1',
+    description='Django template tag to do some basic image processing, and cache the resulting image',
     long_description=open('README.md').read(),
-    author='Vincent Agnano',
-    author_email='vincent.agnano@scopyleft.fr',
-    url='http://github.com/vinyll/django-imagefit',
+    author='Jake Scaltreto',
+    author_email='jscaltreto@gmail.com',
+    url='http://github.com/jscaltreto/django-simplethumb',
     license='BSD',
     packages=find_packages(),
     zip_safe=False,
-    install_requires=['django-appconf'],
+    install_requires=['django', 'six', 'django-appconf', 'Pillow', ],
     include_package_data=True,
     classifiers=[
         'Environment :: Web Environment',
@@ -22,8 +21,8 @@ setup(
         'License :: OSI Approved :: BSD License',
         'Operating System :: OS Independent',
         'Programming Language :: Python',
-        'Programming Language :: Python :: 2.6',
-        'Programming Language :: Python :: 3.3',
+        'Programming Language :: Python :: 2.7',
         'Topic :: Utilities',
+        'Framework :: Django',
     ]
 )
