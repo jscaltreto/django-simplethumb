@@ -166,11 +166,11 @@ class Image(object):
     def process_image(self):
         self.pil = PilImage.open(self.path)
 
+        self.image_format = self.pil.format
+
         # force RGB
         if self.pil.mode not in ('L', 'RGB', 'LA', 'RGBA'):
             self.pil = self.pil.convert('RGB')
-
-        self.image_format = self.pil.format
 
         for image_filter in self.PROCESS_ORDER:
             if getattr(self.spec, image_filter):

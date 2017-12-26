@@ -4,7 +4,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='django-simplethumb',
-    version='0.2',
+    version='0.2.1',
     description='Django template tag to do some basic image processing, and cache the resulting image',
     long_description=open('README.md').read(),
     author='Jake Scaltreto',
