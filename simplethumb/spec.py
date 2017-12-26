@@ -6,6 +6,67 @@ class ChecksumException(Exception):
     pass
 
 
+class LittleFloat(object):
+    """
+    This is for converting aspect ratios (represented as a decimal)
+    to a 16-bit binary representation and vice versa. The resulting
+    format is a non-standard float.
+
+    I'm not a computer scientist, but this seems to work.
+    """
+    BASE = 2
+    MANT_BITS = 11
+    EXP_BITS = 4
+    SIZE = MANT_BITS + EXP_BITS + 1
+
+    @classmethod
+    def pack(cls, num):
+        num = float(num)
+        integral = int(num)
+        dec = num - integral
+        int_bin = '{0:b}'.format(integral) if integral > 0 else ''
+        mantissa = int_bin
+        for idx in range(cls.MANT_BITS - len(int_bin) + 1):
+            if dec == 0:
+                break
+            next_val = float(dec * cls.BASE)
+            next_bit = int(next_val)
+            mantissa += str(next_bit)
+            dec = next_val - next_bit
+
+        if integral:
+            exp = len(int_bin) - 1
+            sign = '0'
+        else:
+            exp = mantissa.find('1') + 1
+            sign = '1'
+            if exp == -1:
+                raise ValueError('Not enough precision {}'.format(num))
+            mantissa = mantissa[exp - 1:]
+
+        if exp >= (cls.BASE ** cls.EXP_BITS):
+            raise ValueError('Not enough precision {}'.format(num))
+
+        bin_str = sign + '{0:b}'.format(exp).zfill(cls.EXP_BITS)[:cls.EXP_BITS] \
+            + mantissa[1:].ljust(cls.MANT_BITS, '0')[:cls.MANT_BITS]
+
+        return int(bin_str, cls.BASE)
+
+    @classmethod
+    def unpack(cls, packed):
+        bin_str = '{0:b}'.format(packed)[-cls.SIZE:].zfill(cls.SIZE)
+        sign = int(bin_str[0])
+        exp = int(bin_str[1:cls.EXP_BITS + 1], cls.BASE)
+        if sign:
+            exp *= -1
+        mantissa = '1' + bin_str[1 + cls.EXP_BITS:]
+        number = float()
+        for idx in range(len(mantissa)):
+            if mantissa[idx:idx + 1] == '1':
+                number += cls.BASE ** (exp - idx)
+        return number
+
+
 class Spec(object):
     """
     Representation of an image format storage
@@ -20,6 +81,9 @@ class Spec(object):
     TOKEN_HEIGHT = 'height'
     TOKEN_FORMATARG = 'formatarg'
     TOKEN_IMAGEFMT = 'image_fmt'
+    TOKEN_CROP_RATIO = 'crop_ratio'
+    TOKEN_CROP_RATIO_WIDTH = 'crop_ratio_width'
+    TOKEN_CROP_RATIO_HEIGHT = 'crop_ratio_height'
 
     TOKEN_SPEC = [
         # token key, string match, kwarg match
@@ -30,6 +94,7 @@ class Spec(object):
         (TOKEN_RESIZE, '(\d+)x(\d+)'),
         (TOKEN_WIDTH, '(\d+)x'),
         (TOKEN_HEIGHT, 'x(\d+)'),
+        (TOKEN_CROP_RATIO, '[Cc](\d+):(\d+)')
     ]
 
     FORMAT_UNDEF = 0
@@ -53,6 +118,7 @@ class Spec(object):
         (TOKEN_HEIGHT, 1),
         (TOKEN_IMAGEFMT, 1),
         (TOKEN_FORMATARG, 1),
+        (TOKEN_CROP_RATIO, 1),
     ]
     HEADER_LENGTH = sum([v for k, v in HEADER_FMT])
     VALID_HEADERS = [k for k, v in HEADER_FMT]
@@ -64,6 +130,7 @@ class Spec(object):
         TOKEN_SCALE: 10,
         TOKEN_IMAGEFMT: 3,
         TOKEN_FORMATARG: 7,
+        TOKEN_CROP_RATIO: 16,
     }
 
     def __init__(self, flags, attrs):
@@ -182,4 +249,8 @@ class Spec(object):
             elif filterkey == cls.TOKEN_SCALE:
                 flags_dict[cls.TOKEN_SCALE] = True
                 attrs_dict[cls.TOKEN_SCALE] = int(args[0])
+            elif filterkey == cls.TOKEN_CROP_RATIO:
+                flags_dict[cls.TOKEN_CROP_RATIO] = True
+                ratio = float(args[0]) / int(args[1])
+                attrs_dict[cls.TOKEN_CROP_RATIO] = LittleFloat.pack(ratio)
         return cls(flags_dict, attrs_dict)

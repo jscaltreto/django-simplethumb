@@ -203,18 +203,20 @@ to convert an image to both JPEG and PNG at the same time).
 * Crop Image - '_W_x_H_,C - Scale an image to *fill* a box _W_ wide and _H_ high, cropping off any excess. e.g. '100x100,C'
 * Convert image to JPEG - 'jpeg' - Convert an image to JPEG (optionally include a 'quality' setting between 1 and 100). e.g. 'jpeg80'
 * Convert image to PNG - 'png' - Convert an image to PNG (optionally include the letter _O_ to optimize). e.g. 'pngO'
+* Crop Image to Ratio - 'C_X_:_Y_' - Crops an image to the specified aspect ratio. This is performed before resizing. e.g. 'C16:9'
 
 If you don't specify a format to convert to, the original image format will be used. Though it will be rerendered
 using the default quality or optimization setting defined.
 
 With the exception of 'Scale Image', none of the resize commands will _increase_ the size of an image. So if the
-image is smaller than the specified bounds, the image will not be scaled.
+image is smaller than the specified bounds, the image will not be scaled. Also note that all crops are "center cropped"
 
 Because the spec will ultimately be encoded in a small binary format for inclusion in the image url, there
 are some hard limits on the sizes which can be specified. Anything higher than these limits will be truncated:
 
 * Width and Height attributes are limited to 13 bits, meaning the maximum image size is 8191x8191px (about 67MP, pretty big).
 * The Percent scale attribute is limited to 10 bits, meaning an image can only be scaled up to 1023%.
+* Crop ratio is stored as a custom 16-bit unsigned floating point (5 bit exponent, 11 bit mantissa), so there are limits related to precission. It should be good enough for image cropping.
 
 ## Troubleshooting
 

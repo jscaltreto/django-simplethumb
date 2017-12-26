@@ -8,7 +8,7 @@ from django.contrib.staticfiles import finders
 from django.core.cache import caches
 
 from simplethumb.conf import settings
-from simplethumb.spec import Spec
+from simplethumb.spec import Spec, LittleFloat
 
 try:
     import BytesIO
@@ -20,7 +20,9 @@ image_cache = caches[settings.SIMPLETHUMB_CACHE_BACKEND_NAME]
 
 
 class Image(object):
-    PROCESS_ORDER = [Spec.TOKEN_CROP, Spec.TOKEN_SCALE, Spec.TOKEN_WIDTH, Spec.TOKEN_HEIGHT, Spec.TOKEN_IMAGEFMT]
+    PROCESS_ORDER = [Spec.TOKEN_CROP_RATIO, Spec.TOKEN_CROP, Spec.TOKEN_SCALE, Spec.TOKEN_WIDTH, Spec.TOKEN_HEIGHT,
+                     Spec.TOKEN_IMAGEFMT]
+
     def __init__(self, url='', spec=None):
         self.original_url = url
         self.path = None
@@ -109,16 +111,8 @@ class Image(object):
         height = self.spec.height
         self._resize(height=height)
 
-    def _crop(self):
-        width = self.spec.width
-        height = self.spec.height
-
-        if height >= width:
-            self._height()
-        else:
-            self._width()
+    def _crop_to(self, width, height):
         img_w, img_h = self.pil.size
-
         # don't crop an image than is smaller than requested size
         if img_w <= width and img_h <= height:
             return
@@ -128,6 +122,31 @@ class Image(object):
             (img_w + width) / 2,
             (img_h + height) / 2,
         ))
+
+    def _crop(self):
+        width = self.spec.width
+        height = self.spec.height
+
+        if height >= width:
+            self._height()
+        else:
+            self._width()
+        self._crop_to(width, height)
+
+    def _crop_ratio(self):
+        new_ratio = LittleFloat.unpack(self.spec.crop_ratio)
+
+        img_w, img_h = self.pil.size
+        current_ratio = float(img_w) / img_h
+
+        if current_ratio >= new_ratio:
+            new_w = round(img_h * new_ratio)
+            new_h = img_h
+        else:
+            new_h = round(img_w * (1 / new_ratio))
+            new_w = img_w
+
+        self._crop_to(new_w, new_h)
 
     def _image_fmt(self):
         getattr(self, '_{}'.format(Spec.FORMAT_MAP[self.spec.image_fmt]))(self.spec.formatarg)
