@@ -2,7 +2,13 @@ import base64
 import hmac
 import os
 import tempfile
-from itertools import izip, cycle
+from itertools import cycle
+
+try:
+    # noinspection PyShadowingBuiltins,PyUnresolvedReferences
+    from itertools import izip as zip
+except ImportError:
+    pass
 
 from appconf import AppConf
 from django.conf import settings
@@ -43,7 +49,14 @@ class SimplethumbConf(AppConf):
 
 
 def calc_hmac(data):
-    mac = hmac.new(str(settings.SIMPLETHUMB_HMAC_KEY))
+    key = str(settings.SIMPLETHUMB_HMAC_KEY)
+    try:
+        key = key.encode()
+        data = data.encode()
+    except UnicodeDecodeError:
+        pass
+
+    mac = hmac.new(key)
     mac.update(data)
     return mac.digest()
 
@@ -51,7 +64,7 @@ def calc_hmac(data):
 def decode_spec(data, basename, mtime):
     padding_needed = len(data) % 4
     if padding_needed != 0:
-        data += b'=' * (4 - padding_needed)
+        data += '=' * (4 - padding_needed)
     decoded = base64.urlsafe_b64decode(str(data))
     sig = calc_hmac(basename + str(mtime))
     spec = xor_crypt_string(decoded, sig)
@@ -61,10 +74,10 @@ def decode_spec(data, basename, mtime):
 def encode_spec(data, basename, mtime):
     sig = calc_hmac(basename + str(mtime))
     spec = xor_crypt_string(data, sig)
-    encoded_spec = base64.urlsafe_b64encode(spec).rstrip('=')
+    encoded_spec = base64.urlsafe_b64encode(spec).decode('utf8').rstrip('=')
     return encoded_spec
 
 
 def xor_crypt_string(data, key):
     # Borrowed from https://stackoverflow.com/questions/11132714/python-two-way-alphanumeric-encryption
-    return ''.join(chr(ord(x) ^ ord(y)) for (x, y) in izip(data, cycle(key)))
+    return bytearray([x ^ y for (x, y) in zip(list(bytearray(data)), cycle(list(bytearray(key))))])

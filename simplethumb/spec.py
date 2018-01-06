@@ -1,5 +1,6 @@
 import binascii
 import re
+import six
 
 
 class ChecksumException(Exception):
@@ -160,7 +161,7 @@ class Spec(object):
 
     @staticmethod
     def make_checksum(specbytes):
-        return chr(sum(map(ord, specbytes)) % 255)
+        return six.b(chr(sum(list(specbytes)) % 255))
 
     def encode(self):
         packed_int = 0
@@ -180,7 +181,7 @@ class Spec(object):
 
         hex_str = format(packed_int, 'x').zfill(8)  # Pad to at least 4 bytes
         specbytes = binascii.unhexlify(('0' * (len(hex_str) % 2)) + hex_str)
-        checksum = self.make_checksum(specbytes)
+        checksum = self.make_checksum(six.iterbytes(specbytes))
         return checksum + specbytes
 
     @classmethod
