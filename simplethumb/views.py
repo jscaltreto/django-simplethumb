@@ -5,9 +5,9 @@ from django.http import HttpResponse, Http404, HttpResponseNotModified
 from django.utils.http import http_date
 from django.views.static import was_modified_since
 
-from simplethumb.conf import settings, decode_spec
+from django.conf import settings
 from simplethumb.models import Image
-from simplethumb.spec import Spec, ChecksumException
+from simplethumb.spec import Spec, ChecksumException, decode_spec
 
 
 # noinspection PyUnusedLocal
@@ -19,7 +19,7 @@ def serve_image(request, basename, encoded_spec, ext):
 
     try:
         spec = Spec.from_spec(
-            decode_spec(encoded_spec, image.basename, image.stat.st_mtime)
+            decode_spec(encoded_spec, image.basename, image.stat.st_mtime, settings.SIMPLETHUMB_HMAC_KEY )
         )
     except ChecksumException:
         raise Http404()

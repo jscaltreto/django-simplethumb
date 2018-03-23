@@ -13,7 +13,7 @@ setup(
     license='BSD',
     packages=find_packages(),
     zip_safe=False,
-    install_requires=['django', 'six', 'django-appconf', 'Pillow', ],
+    install_requires=['django<2', 'six', 'django-appconf', 'Pillow', ],
     include_package_data=True,
     classifiers=[
         'Environment :: Web Environment',

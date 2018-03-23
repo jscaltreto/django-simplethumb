@@ -1,8 +1,5 @@
-import base64
-import hmac
 import os
 import tempfile
-from itertools import izip, cycle
 
 from appconf import AppConf
 from django.conf import settings
@@ -40,31 +37,3 @@ class SimplethumbConf(AppConf):
 
     class Meta:
         prefix = 'simplethumb'
-
-
-def calc_hmac(data):
-    mac = hmac.new(str(settings.SIMPLETHUMB_HMAC_KEY))
-    mac.update(data)
-    return mac.digest()
-
-
-def decode_spec(data, basename, mtime):
-    padding_needed = len(data) % 4
-    if padding_needed != 0:
-        data += b'=' * (4 - padding_needed)
-    decoded = base64.urlsafe_b64decode(str(data))
-    sig = calc_hmac(basename + str(mtime))
-    spec = xor_crypt_string(decoded, sig)
-    return spec
-
-
-def encode_spec(data, basename, mtime):
-    sig = calc_hmac(basename + str(mtime))
-    spec = xor_crypt_string(data, sig)
-    encoded_spec = base64.urlsafe_b64encode(spec).rstrip('=')
-    return encoded_spec
-
-
-def xor_crypt_string(data, key):
-    # Borrowed from https://stackoverflow.com/questions/11132714/python-two-way-alphanumeric-encryption
-    return ''.join(chr(ord(x) ^ ord(y)) for (x, y) in izip(data, cycle(key)))

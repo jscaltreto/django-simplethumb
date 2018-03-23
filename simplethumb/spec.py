@@ -1,5 +1,8 @@
+import base64
 import binascii
+import hmac
 import re
+from itertools import izip, cycle
 
 
 class ChecksumException(Exception):
@@ -90,7 +93,7 @@ class Spec(object):
         (TOKEN_FORMAT_JPEG, 'jpe?g(\d*)'),
         (TOKEN_FORMAT_PNG, 'png([Oo])?'),
         (TOKEN_CROP, '(\d+)x(\d+),[Cc]'),
-        (TOKEN_SCALE, '(\d+(?:\.\d*)?)\%'),
+        (TOKEN_SCALE, '(\d+)\%'),
         (TOKEN_RESIZE, '(\d+)x(\d+)'),
         (TOKEN_WIDTH, '(\d+)x'),
         (TOKEN_HEIGHT, 'x(\d+)'),
@@ -197,7 +200,8 @@ class Spec(object):
         for attr, size in cls.HEADER_FMT:
             mask = (2 ** size - 1 << header_pos)
             value = (packed_int & mask) >> header_pos
-            flags_dict[attr] = value
+            if value:
+                flags_dict[attr] = bool(value)
             header_pos += size
             if value and attr in cls.ATTR_FORMATS.keys():
                 attr_val_size = cls.ATTR_FORMATS[attr]
@@ -254,3 +258,31 @@ class Spec(object):
                 ratio = float(args[0]) / int(args[1])
                 attrs_dict[cls.TOKEN_CROP_RATIO] = LittleFloat.pack(ratio)
         return cls(flags_dict, attrs_dict)
+
+
+def calc_hmac(data, key):
+    mac = hmac.new(str(key))
+    mac.update(data)
+    return mac.digest()
+
+
+def decode_spec(data, basename, mtime, hmac_key='DEFAULT_KEY'):
+    padding_needed = len(data) % 4
+    if padding_needed != 0:
+        data += b'=' * (4 - padding_needed)
+    decoded = base64.urlsafe_b64decode(str(data))
+    sig = calc_hmac(basename + str(mtime), hmac_key)
+    spec = xor_crypt_string(decoded, sig)
+    return spec
+
+
+def encode_spec(data, basename, mtime, hmac_key='DEFAULT_KEY'):
+    sig = calc_hmac(basename + str(mtime), hmac_key)
+    spec = xor_crypt_string(data, sig)
+    encoded_spec = base64.urlsafe_b64encode(spec).rstrip('=')
+    return encoded_spec
+
+
+def xor_crypt_string(data, key):
+    # Borrowed from https://stackoverflow.com/questions/11132714/python-two-way-alphanumeric-encryption
+    return ''.join(chr(ord(x) ^ ord(y)) for (x, y) in izip(data, cycle(key)))
