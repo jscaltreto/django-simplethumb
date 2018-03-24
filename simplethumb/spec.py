@@ -1,8 +1,17 @@
 import base64
 import binascii
+import codecs
+import hashlib
 import hmac
 import re
-from itertools import izip, cycle
+import struct
+
+from itertools import cycle
+
+try:
+    from itertools import izip as zip
+except ImportError:
+    pass
 
 
 class ChecksumException(Exception):
@@ -51,7 +60,7 @@ class LittleFloat(object):
             raise ValueError('Not enough precision {}'.format(num))
 
         bin_str = sign + '{0:b}'.format(exp).zfill(cls.EXP_BITS)[:cls.EXP_BITS] \
-            + mantissa[1:].ljust(cls.MANT_BITS, '0')[:cls.MANT_BITS]
+                  + mantissa[1:].ljust(cls.MANT_BITS, '0')[:cls.MANT_BITS]
 
         return int(bin_str, cls.BASE)
 
@@ -163,7 +172,7 @@ class Spec(object):
 
     @staticmethod
     def make_checksum(specbytes):
-        return chr(sum(map(ord, specbytes)) % 255)
+        return struct.pack('B', sum(map(ord_compat, specbytes)) % 255)
 
     def encode(self):
         packed_int = 0
@@ -188,7 +197,7 @@ class Spec(object):
 
     @classmethod
     def from_spec(cls, data):
-        checkbyte, specbytes = data[:1], data[1:]
+        checkbyte, specbytes = bytes(data[:1]), bytes(data[1:])
         checksum = cls.make_checksum(specbytes)
         if checksum != checkbyte:
             raise ChecksumException
@@ -261,15 +270,14 @@ class Spec(object):
 
 
 def calc_hmac(data, key):
-    mac = hmac.new(str(key))
-    mac.update(data)
+    mac = hmac.new(key.encode(), data.encode(), hashlib.md5)
     return mac.digest()
 
 
 def decode_spec(data, basename, mtime, hmac_key='DEFAULT_KEY'):
     padding_needed = len(data) % 4
     if padding_needed != 0:
-        data += b'=' * (4 - padding_needed)
+        data += '=' * (4 - padding_needed)
     decoded = base64.urlsafe_b64decode(str(data))
     sig = calc_hmac(basename + str(mtime), hmac_key)
     spec = xor_crypt_string(decoded, sig)
@@ -278,11 +286,18 @@ def decode_spec(data, basename, mtime, hmac_key='DEFAULT_KEY'):
 
 def encode_spec(data, basename, mtime, hmac_key='DEFAULT_KEY'):
     sig = calc_hmac(basename + str(mtime), hmac_key)
-    spec = xor_crypt_string(data, sig)
-    encoded_spec = base64.urlsafe_b64encode(spec).rstrip('=')
+    spec = bytes(xor_crypt_string(data, sig))
+    encoded_spec = base64.urlsafe_b64encode(spec).decode().rstrip('=')
     return encoded_spec
 
 
 def xor_crypt_string(data, key):
     # Borrowed from https://stackoverflow.com/questions/11132714/python-two-way-alphanumeric-encryption
-    return ''.join(chr(ord(x) ^ ord(y)) for (x, y) in izip(data, cycle(key)))
+    return bytearray([ord_compat(x) ^ ord_compat(y) for (x, y) in zip(data, cycle(key))])
+
+
+def ord_compat(byte):
+    if isinstance(byte, int):
+        return byte
+    else:
+        return int(codecs.encode(byte, 'hex'), 16)
