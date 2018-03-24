@@ -4,7 +4,7 @@ import re
 from unittest import TestCase
 from pprint import pprint
 
-from ..spec import Spec, encode_spec, decode_spec
+from simplethumb.spec import Spec, encode_spec, decode_spec
 
 
 class TestFixtures(object):
