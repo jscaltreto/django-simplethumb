@@ -30,8 +30,7 @@ class Image(object):
         self._find_fs_image()
 
         self._spec = None
-        if spec:
-            self.spec = spec
+        self.spec = spec
 
         self.save_params = {}
         self.image_format = ''

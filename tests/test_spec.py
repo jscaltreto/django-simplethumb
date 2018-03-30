@@ -1,7 +1,6 @@
 import re
 
-#from django.test import TestCase
-from unittest import TestCase
+from django.test import TestCase
 from pprint import pprint
 
 from simplethumb.spec import Spec, encode_spec, decode_spec
