@@ -13,7 +13,7 @@ setup(
     license='BSD',
     packages=find_packages(),
     zip_safe=False,
-    install_requires=['django<2', 'six', 'django-appconf', 'Pillow', ],
+    install_requires=['django', 'six', 'django-appconf', 'Pillow', ],
     test_requires=['mock', ],
     include_package_data=True,
     classifiers=[
@@ -23,6 +23,9 @@ setup(
         'Operating System :: OS Independent',
         'Programming Language :: Python',
         'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 3.4',
+        'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python :: 3.6',
         'Topic :: Utilities',
         'Framework :: Django',
     ]

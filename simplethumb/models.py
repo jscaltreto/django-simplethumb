@@ -30,7 +30,8 @@ class Image(object):
         self._find_fs_image()
 
         self._spec = None
-        self.spec = spec
+        if spec is not None:
+            self.spec = spec
 
         self.save_params = {}
         self.image_format = ''
@@ -56,7 +57,7 @@ class Image(object):
 
     @property
     def cache_key(self):
-        return '.'.join([self.basename, b64encode(self.spec.encoded)])
+        return '.'.join([self.basename, b64encode(self.spec.encoded).decode()])
 
     @property
     def url(self):

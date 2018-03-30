@@ -48,3 +48,8 @@ STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'tests', 'media'),
 ]
 STATIC_URL = "/static/"
+
+SIMPLETHUMB_CACHE_TTL = 60
+SIMPLETHUMB_CACHE_ENABLED = True
+
+FAKE_TIME = 1234567890
