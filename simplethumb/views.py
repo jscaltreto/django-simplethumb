@@ -19,7 +19,7 @@ def serve_image(request, basename, encoded_spec, ext):
 
     try:
         spec = Spec.from_spec(
-            decode_spec(encoded_spec, image.basename, image.stat.st_mtime, settings.SIMPLETHUMB_HMAC_KEY )
+            decode_spec(encoded_spec, image.basename, image.mtime, settings.SIMPLETHUMB_HMAC_KEY )
         )
     except ChecksumException:
         raise Http404()
@@ -28,7 +28,7 @@ def serve_image(request, basename, encoded_spec, ext):
 
     mimetype = mimetypes.guess_type(request.path)[0]
     if not was_modified_since(request.META.get('HTTP_IF_MODIFIED_SINCE'),
-                              image.stat.st_mtime, image.stat.st_size):
+                              image.mtime, image.stat.st_size):
         return HttpResponseNotModified(content_type=mimetype)
 
     expire_time = settings.SIMPLETHUMB_EXPIRE_HEADER
@@ -38,6 +38,6 @@ def serve_image(request, basename, encoded_spec, ext):
         mimetype
     )
     resp['Expires'] = http_date(time.time() + expire_time)
-    resp['Last-Modified'] = http_date(image.stat.st_mtime)
+    resp['Last-Modified'] = http_date(image.mtime)
 
     return resp

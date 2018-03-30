@@ -10,10 +10,9 @@ except ImportError:
 
 class TestView(TestCase):
 
-    @mock.patch('simplethumb.models.os.stat')
+    @mock.patch('simplethumb.models.Image.mtime', mock.PropertyMock(return_value=settings.FAKE_TIME))
     @mock.patch('time.time', mock.MagicMock(return_value=0))
-    def get_image(self, url, mock_mtime):
-        mock_mtime.return_value.st_mtime = settings.FAKE_TIME
+    def get_image(self, url):
         return self.client.get(url)
 
     def setUp(self):

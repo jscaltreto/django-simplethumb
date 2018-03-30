@@ -67,6 +67,10 @@ class Image(object):
     def spec(self):
         return self._spec
 
+    @property
+    def mtime(self):
+        return self.stat.st_mtime
+
     @spec.setter
     def spec(self, preset=None):
         if isinstance(preset, Spec):
