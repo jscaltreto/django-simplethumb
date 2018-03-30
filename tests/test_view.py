@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.core.cache import caches
 from django.test import TestCase
 from django.utils.http import http_date
 
@@ -14,6 +15,9 @@ class TestView(TestCase):
     def get_image(self, url, mock_mtime):
         mock_mtime.return_value.st_mtime = settings.FAKE_TIME
         return self.client.get(url)
+
+    def setUp(self):
+        caches[settings.SIMPLETHUMB_CACHE_BACKEND_NAME].clear()
 
     def test_view_status_goodspec(self):
         resp = self.get_image('/cat.png.EcGFxfc.png')
