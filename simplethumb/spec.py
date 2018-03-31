@@ -34,6 +34,11 @@ class LittleFloat(object):
     @classmethod
     def pack(cls, num):
         num = float(num)
+        # 1 and 0 have special properties
+        if num == 1:
+            return 32768
+        if num == 0:
+            return 0
         integral = int(num)
         dec = num - integral
         int_bin = '{0:b}'.format(integral) if integral > 0 else ''

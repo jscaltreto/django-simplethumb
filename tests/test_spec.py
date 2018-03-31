@@ -1,5 +1,6 @@
 import re
 
+from django.conf import settings
 from django.test import TestCase
 from pprint import pprint
 
@@ -8,7 +9,7 @@ from simplethumb.spec import Spec, encode_spec, decode_spec
 
 class TestFixtures(object):
     base_name = 'foo.jpg'
-    mtime = '1234567890'
+    mtime = settings.FAKE_TIME
     hmac_key = 'TESTKEY'
     known_specs = [
         ('451x154',

@@ -7,7 +7,9 @@ class TestLittleFloat(TestCase):
     test_data = [
         (2.1, 2150),
         (100, 13440),
-        (1020.12, 20464)
+        (1020.12, 20464),
+        (1, 32768),
+        (0, 0),
     ]
     def test_pack(self):
         for unpacked, packed in self.test_data:
