@@ -1,10 +1,15 @@
 import six
-from django.core.urlresolvers import reverse
+from django.conf import settings
 from django.db.models.fields.files import ImageFieldFile
 from django.template import Library
 
-from simplethumb.conf import encode_spec
+from simplethumb.spec import encode_spec
 from ..models import Image
+
+try:
+    from django.core.urlresolvers import reverse
+except ImportError:
+    from django.urls import reverse
 
 register = Library()
 
@@ -25,7 +30,7 @@ def simplethumb(value, spec=''):
         raise AttributeError("value is not a valid static image or ImageField")
 
     image = Image(url=url, spec=spec)
-    encoded_spec = encode_spec(image.spec.encoded, image.basename, image.stat.st_mtime)
+    encoded_spec = encode_spec(image.spec.encoded, image.basename, image.mtime, settings.SIMPLETHUMB_HMAC_KEY)
 
     return reverse('simplethumb', kwargs={
         'basename': image.basename,

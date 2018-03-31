@@ -1,4 +1,6 @@
 *.pyc
+.tox/
+.pytest_cache/
 build/
 dist/
 *.egg*/

@@ -1,5 +1,17 @@
+import base64
 import binascii
+import codecs
+import hashlib
+import hmac
 import re
+import struct
+
+from itertools import cycle
+
+try:
+    from itertools import izip as zip
+except ImportError:
+    pass
 
 
 class ChecksumException(Exception):
@@ -22,6 +34,11 @@ class LittleFloat(object):
     @classmethod
     def pack(cls, num):
         num = float(num)
+        # 1 and 0 have special properties
+        if num == 1:
+            return 32768
+        if num == 0:
+            return 0
         integral = int(num)
         dec = num - integral
         int_bin = '{0:b}'.format(integral) if integral > 0 else ''
@@ -48,7 +65,7 @@ class LittleFloat(object):
             raise ValueError('Not enough precision {}'.format(num))
 
         bin_str = sign + '{0:b}'.format(exp).zfill(cls.EXP_BITS)[:cls.EXP_BITS] \
-            + mantissa[1:].ljust(cls.MANT_BITS, '0')[:cls.MANT_BITS]
+                  + mantissa[1:].ljust(cls.MANT_BITS, '0')[:cls.MANT_BITS]
 
         return int(bin_str, cls.BASE)
 
@@ -90,7 +107,7 @@ class Spec(object):
         (TOKEN_FORMAT_JPEG, 'jpe?g(\d*)'),
         (TOKEN_FORMAT_PNG, 'png([Oo])?'),
         (TOKEN_CROP, '(\d+)x(\d+),[Cc]'),
-        (TOKEN_SCALE, '(\d+(?:\.\d*)?)\%'),
+        (TOKEN_SCALE, '(\d+)\%'),
         (TOKEN_RESIZE, '(\d+)x(\d+)'),
         (TOKEN_WIDTH, '(\d+)x'),
         (TOKEN_HEIGHT, 'x(\d+)'),
@@ -160,7 +177,7 @@ class Spec(object):
 
     @staticmethod
     def make_checksum(specbytes):
-        return chr(sum(map(ord, specbytes)) % 255)
+        return struct.pack('B', sum(map(ord_compat, specbytes)) % 255)
 
     def encode(self):
         packed_int = 0
@@ -185,7 +202,7 @@ class Spec(object):
 
     @classmethod
     def from_spec(cls, data):
-        checkbyte, specbytes = data[:1], data[1:]
+        checkbyte, specbytes = bytes(data[:1]), bytes(data[1:])
         checksum = cls.make_checksum(specbytes)
         if checksum != checkbyte:
             raise ChecksumException
@@ -197,7 +214,8 @@ class Spec(object):
         for attr, size in cls.HEADER_FMT:
             mask = (2 ** size - 1 << header_pos)
             value = (packed_int & mask) >> header_pos
-            flags_dict[attr] = value
+            if value:
+                flags_dict[attr] = bool(value)
             header_pos += size
             if value and attr in cls.ATTR_FORMATS.keys():
                 attr_val_size = cls.ATTR_FORMATS[attr]
@@ -254,3 +272,37 @@ class Spec(object):
                 ratio = float(args[0]) / int(args[1])
                 attrs_dict[cls.TOKEN_CROP_RATIO] = LittleFloat.pack(ratio)
         return cls(flags_dict, attrs_dict)
+
+
+def calc_hmac(data, key):
+    mac = hmac.new(key.encode(), data.encode(), hashlib.md5)
+    return mac.digest()
+
+
+def decode_spec(data, basename, mtime, hmac_key='DEFAULT_KEY'):
+    padding_needed = len(data) % 4
+    if padding_needed != 0:
+        data += '=' * (4 - padding_needed)
+    decoded = base64.urlsafe_b64decode(str(data))
+    sig = calc_hmac(basename + str(mtime), hmac_key)
+    spec = xor_crypt_string(decoded, sig)
+    return spec
+
+
+def encode_spec(data, basename, mtime, hmac_key='DEFAULT_KEY'):
+    sig = calc_hmac(basename + str(mtime), hmac_key)
+    spec = bytes(xor_crypt_string(data, sig))
+    encoded_spec = base64.urlsafe_b64encode(spec).decode().rstrip('=')
+    return encoded_spec
+
+
+def xor_crypt_string(data, key):
+    # Borrowed from https://stackoverflow.com/questions/11132714/python-two-way-alphanumeric-encryption
+    return bytearray([ord_compat(x) ^ ord_compat(y) for (x, y) in zip(data, cycle(key))])
+
+
+def ord_compat(byte):
+    if isinstance(byte, int):
+        return byte
+    else:
+        return int(codecs.encode(byte, 'hex'), 16)
