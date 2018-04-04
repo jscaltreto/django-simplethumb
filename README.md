@@ -84,7 +84,7 @@ before uploading it.
 
 #### Download
 
-Via pip ![latest version](https://img.shields.io/pypi/v/django-imagefit.svg)
+Via pip ![latest version](https://img.shields.io/pypi/v/django-simplethumb.svg)
 
 ```bash
 pip install django-simplethumb
